@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-CargaloteApplication<cargalote>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.cargalote.cargalote.CargaloteApplication",
+            "projectName": "cargalote",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

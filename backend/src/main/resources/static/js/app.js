@@ -1,8 +1,6 @@
-const API_BASE_URL = 'http://localhost:8080/api';
-
-const LS_SESSION = 'cargolocate_session';
-const LS_PERSONAL = 'cargolocate_personal';
-const LS_PLACES = 'cargolocate_places';
+const LS_SESSION = 'cargalocate_session';
+const LS_PERSONAL = 'cargalocate_personal';
+const LS_PLACES = 'cargalocate_places';
 
 const DEFAULT_PLACES = [
   'Sin asignar', 'Muelle 2 · STS-1', 'Muelle 2 · STS-2', 'Muelle 2 · STS-3',
@@ -51,11 +49,11 @@ function renderPlacesSelect(el, selected) {
   if (!el) return;
 
   el.innerHTML = getPlaces()
-    .map(place =>
+    .map(p =>
       '<option' +
-      (place === selected ? ' selected' : '') +
+      (p === selected ? ' selected' : '') +
       '>' +
-      place +
+      p +
       '</option>'
     )
     .join('');
@@ -63,63 +61,69 @@ function renderPlacesSelect(el, selected) {
 
 function renderPersonal() {
   const grid = document.getElementById('crewGrid');
+
   if (!grid) return;
 
   const list = getPersonal();
 
-  grid.innerHTML = list.map(person => {
-    const on = person.shift === '08–14' || person.shift === 'Supervisión';
+  grid.innerHTML = list.map(p => {
+    const on = p.shift === '08–14' || p.shift === 'Supervisión';
 
     return '<div class="crew-row">' +
-      '<div class="avatar">' + escapeHTML(initials(person.name)) + '</div>' +
-      '<div class="ci"><b>' + escapeHTML(person.name) + '</b><span>' +
-      escapeHTML(person.role) + ' · Turno ' + escapeHTML(person.shift) +
+      '<div class="avatar">' + initials(p.name) + '</div>' +
+      '<div class="ci"><b>' + p.name + '</b><span>' +
+      p.role + ' · Turno ' + p.shift +
       '</span></div>' +
       '<span class="shift' + (on ? ' on' : '') + '">' +
-      escapeHTML(person.shift) +
+      p.shift +
       '</span>' +
       '<div class="place-box">' +
       '<span class="pb-label">Lugar de trabajo:</span>' +
       '<select class="sel place-sel" onchange="setPersonPlace(' +
-      person.id +
+      p.id +
       ', this.value)">' +
       getPlaces()
-        .map(place =>
+        .map(x =>
           '<option' +
-          (place === person.place ? ' selected' : '') +
+          (x === p.place ? ' selected' : '') +
           '>' +
-          escapeHTML(place) +
+          x +
           '</option>'
         )
         .join('') +
       '</select>' +
       '</div>' +
       '<button class="del-person" title="Quitar del turno" onclick="removePerson(' +
-      person.id +
+      p.id +
       ')">×</button>' +
       '</div>';
   }).join('');
 
   const assigned = list.filter(
-    person => person.place && person.place !== 'Sin asignar'
+    p => p.place && p.place !== 'Sin asignar'
   ).length;
 
   const perCount = document.getElementById('perCount');
   const tallyCount = document.getElementById('tallyCount');
 
-  if (perCount) perCount.textContent = list.length;
-  if (tallyCount) tallyCount.textContent = assigned;
+  if (perCount) {
+    perCount.textContent = list.length;
+  }
+
+  if (tallyCount) {
+    tallyCount.textContent = assigned;
+  }
 }
 
 function setPersonPlace(id, place) {
   const list = getPersonal();
-  const person = list.find(item => item.id === id);
+  const p = list.find(x => x.id === id);
 
-  if (!person) return;
-
-  person.place = place;
-  savePersonal(list);
-  renderPersonal();
+  if (p) {
+    p.place = place;
+    savePersonal(list);
+    renderPersonal();
+  }
 }
 
 function addPerson() {
@@ -136,13 +140,12 @@ function addPerson() {
   const place = placeInput.value;
 
   if (!name) {
-    alert('Indica el nombre del personal.');
-    return;
+    return alert('Indica el nombre del personal.');
   }
 
   const list = getPersonal();
   const id = list.length
-    ? Math.max(...list.map(person => person.id)) + 1
+    ? Math.max(...list.map(x => x.id)) + 1
     : 1;
 
   list.push({
@@ -161,11 +164,12 @@ function addPerson() {
 }
 
 function removePerson(id) {
-  const list = getPersonal().filter(person => person.id !== id);
-
+  const list = getPersonal().filter(x => x.id !== id);
   savePersonal(list);
   renderPersonal();
 }
+
+/* ================= AUTENTICACIÓN ================= */
 
 function getSession() {
   try {
@@ -216,22 +220,23 @@ function setMsg(id, text, ok = false) {
 }
 
 async function apiRequest(endpoint, options = {}) {
-  const response = await fetch(API_BASE_URL + endpoint, {
+  const response = await fetch('/api' + endpoint, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {})
-    },
-    ...options
+    }
   });
 
   const contentType = response.headers.get('content-type') || '';
+
   const data = contentType.includes('application/json')
     ? await response.json()
     : await response.text();
 
   if (!response.ok) {
     const message =
-      typeof data === 'object' && data?.message
+      typeof data === 'object' && data !== null && data.message
         ? data.message
         : 'Error en la comunicación con el servidor.';
 
@@ -242,30 +247,26 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 async function doRegister() {
-  const name = document.getElementById('regName')?.value.trim();
-  const email = document.getElementById('regEmail')?.value.trim().toLowerCase();
-  const user = document.getElementById('regUser')?.value.trim().toLowerCase();
-  const pass = document.getElementById('regPass')?.value;
-  const pass2 = document.getElementById('regPass2')?.value;
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim().toLowerCase();
+  const user = document.getElementById('regUser').value.trim().toLowerCase();
+  const pass = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
 
   if (!name || !email || !user || !pass) {
-    setMsg('regMsg', 'Completa todos los campos.');
-    return;
+    return setMsg('regMsg', 'Completa todos los campos.');
   }
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    setMsg('regMsg', 'Correo electrónico no válido.');
-    return;
+    return setMsg('regMsg', 'Correo electrónico no válido.');
   }
 
   if (pass.length < 6) {
-    setMsg('regMsg', 'La contraseña debe tener al menos 6 caracteres.');
-    return;
+    return setMsg('regMsg', 'La contraseña debe tener al menos 6 caracteres.');
   }
 
   if (pass !== pass2) {
-    setMsg('regMsg', 'Las contraseñas no coinciden.');
-    return;
+    return setMsg('regMsg', 'Las contraseñas no coinciden.');
   }
 
   try {
@@ -281,11 +282,14 @@ async function doRegister() {
 
     setMsg(
       'regMsg',
-      data?.message || 'Cuenta creada correctamente. Ya puedes iniciar sesión.',
+      data.message || 'Cuenta creada correctamente. Ya puedes iniciar sesión.',
       true
     );
 
-    setTimeout(() => showAuth('loginCard'), 1200);
+    setTimeout(() => {
+      showAuth('loginCard');
+    }, 1200);
+
   } catch (error) {
     setMsg(
       'regMsg',
@@ -295,12 +299,11 @@ async function doRegister() {
 }
 
 async function doLogin() {
-  const id = document.getElementById('loginUser')?.value.trim().toLowerCase();
-  const pass = document.getElementById('loginPass')?.value;
+  const id = document.getElementById('loginUser').value.trim().toLowerCase();
+  const pass = document.getElementById('loginPass').value;
 
   if (!id || !pass) {
-    setMsg('loginMsg', 'Completa usuario y contraseña.');
-    return;
+    return setMsg('loginMsg', 'Completa usuario y contraseña.');
   }
 
   try {
@@ -312,18 +315,18 @@ async function doLogin() {
       })
     });
 
-    const sessionUser = data?.user || data;
+    const user = data.user;
 
     saveSession({
-      user: sessionUser.user || id,
-      name: sessionUser.name || 'Usuario',
-      email: sessionUser.email || '',
-      role: sessionUser.role || 'Jefe de Turno',
-      token: data?.token || null,
+      user: user.user,
+      name: user.name,
+      email: user.email,
+      role: user.role,
       ts: Date.now()
     });
 
-    enterApp(sessionUser);
+    enterApp(user);
+
   } catch (error) {
     setMsg(
       'loginMsg',
@@ -337,56 +340,42 @@ function doLogout() {
   location.reload();
 }
 
+/* ================= UTILIDADES ================= */
+
 function initials(name) {
   if (!name) return '--';
 
   return name
-    .trim()
-    .split(/\s+/)
-    .map(word => word[0])
+    .split(' ')
+    .map(w => w[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
 }
 
-function escapeHTML(value) {
-  const div = document.createElement('div');
-  div.textContent = value ?? '';
-  return div.innerHTML;
-}
+function enterApp(u) {
+  document.getElementById('authWrapper').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
 
-function enterApp(user) {
-  const authWrapper = document.getElementById('authWrapper');
-  const app = document.getElementById('app');
-
-  if (!authWrapper || !app) return;
-
-  authWrapper.classList.add('hidden');
-  app.classList.remove('hidden');
-
-  const userName = document.getElementById('userName');
-  const userAv = document.getElementById('userAv');
-  const userRole = document.getElementById('userRole');
-
-  if (userName) userName.textContent = user.name || 'Usuario';
-  if (userAv) userAv.textContent = initials(user.name || 'Usuario');
-  if (userRole) userRole.textContent = user.role || 'Jefe de Turno';
+  document.getElementById('userName').textContent = u.name;
+  document.getElementById('userAv').textContent = initials(u.name);
+  document.getElementById('userRole').textContent = u.role || 'Jefe de Turno';
 
   startClock();
   startTelemetry();
   drawChart();
 }
 
-window.addEventListener('keydown', event => {
-  if (event.key !== 'Enter') return;
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
 
   const app = document.getElementById('app');
-  const registerCard = document.getElementById('registerCard');
+  const reg = document.getElementById('registerCard');
 
-  if (!app || !registerCard) return;
+  if (!app || !reg) return;
 
   if (app.classList.contains('hidden')) {
-    if (registerCard.classList.contains('hidden')) {
+    if (reg.classList.contains('hidden')) {
       doLogin();
     } else {
       doRegister();
@@ -394,33 +383,33 @@ window.addEventListener('keydown', event => {
   }
 });
 
-(function restoreSession() {
-  const session = getSession();
+(function () {
+  const sess = getSession();
 
-  if (session) {
+  if (sess) {
     enterApp({
-      user: session.user,
-      name: session.name,
-      email: session.email,
-      role: session.role
+      user: sess.user,
+      name: sess.name,
+      email: sess.email,
+      role: sess.role
     });
   }
 })();
 
 function startClock() {
-  const timeElement = document.getElementById('clockTime');
-  const dateElement = document.getElementById('clockDate');
+  const t = document.getElementById('clockTime');
+  const d = document.getElementById('clockDate');
 
-  if (!timeElement || !dateElement) return;
+  if (!t || !d) return;
 
   const tick = () => {
     const now = new Date();
 
-    timeElement.textContent = now.toLocaleTimeString('es-AR', {
+    t.textContent = now.toLocaleTimeString('es-AR', {
       hour12: false
     });
 
-    dateElement.textContent = now.toLocaleDateString('es-AR', {
+    d.textContent = now.toLocaleDateString('es-AR', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -446,12 +435,12 @@ function goSection(btn) {
   if (!btn) return;
 
   document.querySelectorAll('.nav button')
-    .forEach(button => button.classList.remove('active'));
+    .forEach(b => b.classList.remove('active'));
 
   btn.classList.add('active');
 
   document.querySelectorAll('.section')
-    .forEach(section => section.classList.remove('active'));
+    .forEach(s => s.classList.remove('active'));
 
   const section = document.getElementById(btn.dataset.sec);
 
@@ -462,7 +451,7 @@ function goSection(btn) {
   const pageTitle = document.getElementById('pageTitle');
 
   if (pageTitle) {
-    pageTitle.textContent = titles[btn.dataset.sec] || 'CARGALOTE';
+    pageTitle.textContent = titles[btn.dataset.sec];
   }
 }
 
@@ -537,11 +526,11 @@ function drawChart() {
 
   ctx.beginPath();
 
-  chartData.forEach((value, index) => {
-    const x = pad + (w - pad - 8) * index / (chartData.length - 1);
-    const y = pad + (h - pad * 2) * (1 - value / 50);
+  chartData.forEach((v, i) => {
+    const x = pad + (w - pad - 8) * i / (chartData.length - 1);
+    const y = pad + (h - pad * 2) * (1 - (v - 0) / 50);
 
-    if (index === 0) {
+    if (i === 0) {
       ctx.moveTo(x, y);
     } else {
       ctx.lineTo(x, y);
@@ -563,15 +552,19 @@ function drawChart() {
     h - pad
   );
 
-  ctx.lineTo(pad, h - pad);
+  ctx.lineTo(
+    pad,
+    h - pad
+  );
+
   ctx.closePath();
 
   ctx.fillStyle = grad;
   ctx.fill();
 }
 
-function pushChart(value) {
-  chartData.push(value);
+function pushChart(v) {
+  chartData.push(v);
   chartData.shift();
   drawChart();
 }
@@ -599,45 +592,48 @@ function renderLogs() {
   if (!box) return;
 
   box.innerHTML = seedLogs
-    .map(([time, level, message]) =>
+    .map(([t, lv, msg]) =>
       '<div>' +
-      '<span class="lt">' + escapeHTML(time) + '</span>' +
-      '<span class="lv">[' + escapeHTML(level) + ']</span>' +
-      '<span>' + escapeHTML(message) + '</span>' +
+      '<span class="lt">' + t + '</span>' +
+      '<span class="lv">[' + lv + ']</span>' +
+      '<span>' + msg + '</span>' +
       '</div>'
     )
     .join('');
 }
 
 function addLog() {
-  const input = document.getElementById('logInput');
+  const inp = document.getElementById('logInput');
 
-  if (!input) return;
+  if (!inp) return;
 
-  const text = input.value.trim();
+  const txt = inp.value.trim();
 
-  if (!text) return;
+  if (!txt) return;
 
   const now = new Date();
 
-  const time = now.toLocaleTimeString('es-AR', {
+  const t = now.toLocaleTimeString('es-AR', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false
   });
 
-  seedLogs.unshift([time, 'INFO', text]);
+  seedLogs.unshift([t, 'INFO', txt]);
 
   renderLogs();
 
-  input.value = '';
+  inp.value = '';
 }
 
 renderLogs();
 
-(function initializeApp() {
-  const placeSelect = document.getElementById('pPlace');
+(function () {
+  renderPlacesSelect(
+    document.getElementById('pPlace'),
+    'Sin asignar'
+  );
 
-  renderPlacesSelect(placeSelect, 'Sin asignar');
   renderPersonal();
 })();
+
