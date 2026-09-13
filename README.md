@@ -1,5 +1,5 @@
-## CargoLocate
-<h1>Gestión de los contenedores</h1>
+<h1> CargoLocate</h1>
+<h2>Gestión de los contenedores</h3>
 
 ## Tecnologías
 <span>
