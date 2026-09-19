@@ -1,11 +1,11 @@
 package com.cargalote.cargalote.model;
 
-
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 public class Equipo {
@@ -14,9 +14,16 @@ public class Equipo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank
     private String nombre;
+
+    @NotBlank
     private String tipo;
+
+    @NotBlank
     private String estado;
+
+    @Min(0)
     private Integer horasUso;
 
     public Equipo() {

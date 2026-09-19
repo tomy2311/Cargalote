@@ -2,6 +2,7 @@ package com.cargalote.cargalote.controller;
 
 import com.cargalote.cargalote.model.Personal;
 import com.cargalote.cargalote.service.PersonalService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,7 +38,7 @@ public class PersonalController {
 
     @PostMapping
     public ResponseEntity<Personal> registrarPersonal(
-            @RequestBody Personal persona) {
+            @Valid @RequestBody Personal persona) {
 
         Personal nuevoPersonal =
                 personalService.registrarPersonal(persona);
@@ -50,7 +51,7 @@ public class PersonalController {
     @PutMapping("/{id}")
     public ResponseEntity<Personal> actualizarPersonal(
             @PathVariable Long id,
-            @RequestBody Personal persona) {
+            @Valid @RequestBody Personal persona) {
 
         Personal personalActualizado =
                 personalService.actualizarPersonal(id, persona);

@@ -2,6 +2,7 @@ package com.cargalote.cargalote.controller;
 
 import com.cargalote.cargalote.model.Equipo;
 import com.cargalote.cargalote.service.EquipoService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,7 +38,7 @@ public class EquipoController {
 
     @PostMapping
     public ResponseEntity<Equipo> registrarEquipo(
-            @RequestBody Equipo equipo) {
+            @Valid @RequestBody Equipo equipo) {
 
         Equipo nuevoEquipo = equipoService.registrarEquipo(equipo);
 
@@ -49,7 +50,7 @@ public class EquipoController {
     @PutMapping("/{id}")
     public ResponseEntity<Equipo> actualizarEquipo(
             @PathVariable Long id,
-            @RequestBody Equipo equipo) {
+            @Valid @RequestBody Equipo equipo) {
 
         Equipo equipoActualizado =
                 equipoService.actualizarEquipo(id, equipo);

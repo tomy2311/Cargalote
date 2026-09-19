@@ -2,6 +2,7 @@ package com.cargalote.cargalote.controller;
 
 import com.cargalote.cargalote.model.Carga;
 import com.cargalote.cargalote.service.CargaService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,8 @@ public class CargaController {
     }
 
     @PostMapping
-    public ResponseEntity<Carga> registrarCarga(@RequestBody Carga carga) {
+    public ResponseEntity<Carga> registrarCarga(
+            @Valid @RequestBody Carga carga) {
 
         Carga nuevaCarga = cargaService.registrarCarga(carga);
 
@@ -48,7 +50,7 @@ public class CargaController {
     @PutMapping("/{id}")
     public ResponseEntity<Carga> actualizarCarga(
             @PathVariable Long id,
-            @RequestBody Carga carga) {
+            @Valid @RequestBody Carga carga) {
 
         Carga cargaActualizada = cargaService.actualizarCarga(id, carga);
 

@@ -1,10 +1,10 @@
 package com.cargalote.cargalote.model;
 
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 public class Carga {
@@ -13,9 +13,16 @@ public class Carga {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank
     private String numero;
+
+    @NotBlank
     private String origen;
+
+    @NotBlank
     private String destino;
+
+    @NotBlank
     private String estado;
 
     public Carga() {

@@ -2,6 +2,7 @@ package com.cargalote.cargalote.controller;
 
 import com.cargalote.cargalote.model.Contenedor;
 import com.cargalote.cargalote.service.ContenedorService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,7 +38,7 @@ public class ContenedorController {
 
     @PostMapping
     public ResponseEntity<Contenedor> registrarContenedor(
-            @RequestBody Contenedor contenedor) {
+            @Valid @RequestBody Contenedor contenedor) {
 
         Contenedor nuevoContenedor =
                 contenedorService.registrarContenedor(contenedor);
@@ -50,7 +51,7 @@ public class ContenedorController {
     @PutMapping("/{id}")
     public ResponseEntity<Contenedor> actualizarContenedor(
             @PathVariable Long id,
-            @RequestBody Contenedor contenedor) {
+            @Valid @RequestBody Contenedor contenedor) {
 
         Contenedor contenedorActualizado =
                 contenedorService.actualizarContenedor(id, contenedor);
