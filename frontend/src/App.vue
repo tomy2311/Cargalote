@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+// Estado de acceso local de demostración.
+// Más adelante se reemplazará por Firebase Authentication.
 const authMode = ref('login')
 const isLoggedIn = ref(false)
 const currentUser = ref(null)
@@ -39,7 +41,16 @@ const pageTitle = computed(() => {
 let clockInterval = null
 
 function getUsers() {
-  return JSON.parse(localStorage.getItem('cargolocate_users') || '[]')
+  try {
+    const users = JSON.parse(localStorage.getItem('cargolocate_users') || '[]')
+    return Array.isArray(users) ? users : []
+  } catch {
+    return []
+  }
+}
+
+function saveUsers(users) {
+  localStorage.setItem('cargolocate_users', JSON.stringify(users))
 }
 
 function setMessage(messageRef, text, type = 'error') {
@@ -93,13 +104,8 @@ function doRegister() {
     role: 'Jefe de Turno'
   })
 
-  localStorage.setItem('cargolocate_users', JSON.stringify(users))
-
-  setMessage(
-    regMsg,
-    'Cuenta creada correctamente. Ya puedes iniciar sesión.',
-    'ok'
-  )
+  saveUsers(users)
+  setMessage(regMsg, 'Cuenta creada correctamente. Ya puedes iniciar sesión.', 'ok')
 
   regName.value = ''
   regEmail.value = ''
@@ -124,7 +130,7 @@ function doLogin() {
   )
 
   if (!user) {
-    setMessage(loginMsg, 'Credenciales incorrectas. Verifica tus datos.')
+    setMessage(loginMsg, 'Credenciales incorrectas. Verifica usuario y contraseña.')
     return
   }
 
@@ -132,12 +138,12 @@ function doLogin() {
     user: user.user,
     name: user.name,
     email: user.email,
-    role: user.role,
+    role: user.role || 'Jefe de Turno',
     ts: Date.now()
   }
 
   localStorage.setItem('cargolocate_session', JSON.stringify(session))
-
+  loginPass.value = ''
   enterApp(session)
 }
 
@@ -151,6 +157,9 @@ function doLogout() {
   localStorage.removeItem('cargolocate_session')
   currentUser.value = null
   isLoggedIn.value = false
+  activeSection.value = 'sec-general'
+  loginUser.value = ''
+  loginPass.value = ''
   showAuth('login')
 }
 
@@ -224,22 +233,22 @@ onUnmounted(() => {
           </h2>
 
           <p>
-            Supervisa muelle, patio, grúas, gates y equipos.
-            Plataforma de logística portuaria Cargolocate · Terminal Muelle 2.
+            Supervisa muelle, patio, grúas, gates y equipos desde una misma plataforma
+            de logística portuaria.
           </p>
 
           <div class="auth-stats" style="margin-top: 28px;">
-            <div><b>1,148</b><span>Mov. 24h</span></div>
-            <div><b>42</b><span>Mov/hora</span></div>
-            <div><b>9</b><span>Grúas STS</span></div>
-            <div><b>98.2%</b><span>Disponibilidad</span></div>
+            <div><b>Muelle</b><span>Operaciones y atraques</span></div>
+            <div><b>Patio</b><span>Contenedores y bloques</span></div>
+            <div><b>Equipos</b><span>Estado y disponibilidad</span></div>
+            <div><b>Personal</b><span>Organización de turnos</span></div>
           </div>
         </div>
 
         <div class="auth-stats">
           <div>
             <b>Terminal Cargolocate</b>
-            <span>Puerto de Algeciras · Muelle 2</span>
+            <span>Gestión operativa portuaria</span>
           </div>
         </div>
       </div>
@@ -276,19 +285,13 @@ onUnmounted(() => {
 
           <button class="btn-primary" type="submit">Ingresar</button>
 
-          <div
-            v-if="loginMsg.text"
-            class="auth-msg"
-            :class="loginMsg.type"
-          >
+          <div v-if="loginMsg.text" class="auth-msg" :class="loginMsg.type">
             {{ loginMsg.text }}
           </div>
 
           <p class="auth-switch">
             ¿Aún no tienes cuenta?
-            <a href="#" @click.prevent="showAuth('register')">
-              Regístrate aquí
-            </a>
+            <a href="#" @click.prevent="showAuth('register')">Regístrate aquí</a>
           </p>
         </form>
 
@@ -318,29 +321,23 @@ onUnmounted(() => {
 
           <div class="field">
             <label>Contraseña</label>
-            <input v-model="regPass" type="password" placeholder="Mínimo 6 caracteres">
+            <input v-model="regPass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
           </div>
 
           <div class="field">
             <label>Confirmar contraseña</label>
-            <input v-model="regPass2" type="password" placeholder="Repite la contraseña">
+            <input v-model="regPass2" type="password" placeholder="Repite la contraseña" autocomplete="new-password">
           </div>
 
           <button class="btn-primary" type="submit">Crear cuenta</button>
 
-          <div
-            v-if="regMsg.text"
-            class="auth-msg"
-            :class="regMsg.type"
-          >
+          <div v-if="regMsg.text" class="auth-msg" :class="regMsg.type">
             {{ regMsg.text }}
           </div>
 
           <p class="auth-switch">
             ¿Ya tienes cuenta?
-            <a href="#" @click.prevent="showAuth('login')">
-              Inicia sesión
-            </a>
+            <a href="#" @click.prevent="showAuth('login')">Inicia sesión</a>
           </p>
         </form>
       </div>
@@ -361,7 +358,6 @@ onUnmounted(() => {
 
         <nav class="nav">
           <div class="nav-sep">Operación</div>
-
           <button
             v-for="section in sections.slice(0, 3)"
             :key="section.id"
@@ -373,7 +369,6 @@ onUnmounted(() => {
           </button>
 
           <div class="nav-sep">Recursos</div>
-
           <button
             v-for="section in sections.slice(3, 5)"
             :key="section.id"
@@ -385,7 +380,6 @@ onUnmounted(() => {
           </button>
 
           <div class="nav-sep">Personal</div>
-
           <button
             v-for="section in sections.slice(5)"
             :key="section.id"
@@ -400,7 +394,6 @@ onUnmounted(() => {
         <div class="side-foot">
           <div class="meta">
             Terminal Cargolocate · Muelle 2<br>
-            Puerto de Algeciras<br>
             Turno: 08:00 – 20:00
           </div>
 
@@ -414,9 +407,7 @@ onUnmounted(() => {
         <div class="topbar">
           <div>
             <h2>{{ pageTitle }}</h2>
-            <div class="crumb">
-              Terminal Cargolocate · Ruta Algeciras → Rotterdam · Próximo atraque ETA 4h
-            </div>
+            <div class="crumb">Terminal Cargolocate · Gestión operativa de la terminal</div>
           </div>
 
           <div class="topbar-right">
@@ -435,46 +426,290 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- CONTENIDO PROVISIONAL -->
         <section class="section active">
-          <div v-if="activeSection === 'sec-general'" class="grid-kpis">
-            <div class="kpi up">
-              <div class="k-label">Movimientos (24h)</div>
-              <div class="k-value">1,148<small>mvm</small></div>
-              <div class="k-trend">▲ 6.2% vs ayer</div>
+          <!-- PANEL GENERAL -->
+          <template v-if="activeSection === 'sec-general'">
+            <div class="grid-kpis">
+              <div class="kpi flat">
+                <div class="k-label">Movimientos (24h)</div>
+                <div class="k-value">—<small>mvm</small></div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
+
+              <div class="kpi flat">
+                <div class="k-label">Productividad</div>
+                <div class="k-value">—<small>mov/h</small></div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
+
+              <div class="kpi flat">
+                <div class="k-label">Equipos operativos</div>
+                <div class="k-value">—</div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
+
+              <div class="kpi flat">
+                <div class="k-label">Incidencias activas</div>
+                <div class="k-value">—</div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
             </div>
 
-            <div class="kpi flat">
-              <div class="k-label">Productividad</div>
-              <div class="k-value">34.2<small>mov/h</small></div>
-              <div class="k-trend">● Promedio muelle + patio</div>
+            <div class="grid-2">
+              <div class="panel-c">
+                <div class="p-head">
+                  <h4>Movimientos por hora · Terminal</h4>
+                  <span class="tag">Pendiente de conexión</span>
+                </div>
+                <div class="chart-wrap" style="display: grid; place-items: center; color: var(--muted); text-align: center;">
+                  El gráfico estará disponible cuando conectemos las estadísticas del backend.
+                </div>
+              </div>
+
+              <div class="panel-c">
+                <div class="p-head">
+                  <h4>Operación de la terminal</h4>
+                  <span class="tag">Datos operativos</span>
+                </div>
+                <div style="padding: 28px 12px; color: var(--muted); text-align: center;">
+                  Los indicadores operativos aparecerán cuando recibamos datos reales.
+                </div>
+              </div>
             </div>
 
-            <div class="kpi warn">
-              <div class="k-label">Grúas STS operativas</div>
-              <div class="k-value">7<small>/ 9</small></div>
-              <div class="k-trend">▲ 2 en mantenimiento</div>
+            <div class="grid-2">
+              <div class="panel-c">
+                <div class="p-head">
+                  <h4>Incidencias activas</h4>
+                  <span class="tag">Sin datos cargados</span>
+                </div>
+                <div style="padding: 24px 12px; color: var(--muted); text-align: center;">
+                  Las incidencias aparecerán aquí cuando conectemos esta sección con el backend.
+                </div>
+              </div>
+
+              <div class="panel-c">
+                <div class="p-head">
+                  <h4>Reefer · Temperaturas</h4>
+                  <span class="tag">Pendiente de integración</span>
+                </div>
+                <div style="padding: 24px 12px; color: var(--muted); text-align: center;">
+                  El monitoreo Reefer estará disponible cuando definamos e integremos sus datos.
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- MUELLE -->
+          <template v-else-if="activeSection === 'sec-muelle'">
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Operaciones de muelle</h4>
+                <span class="tag">Pendiente de integración</span>
+              </div>
+              <p style="color: var(--muted); line-height: 1.6;">
+                La información de buques, atraques y operaciones de muelle se mostrará aquí
+                cuando definamos su almacenamiento y conexión con el backend.
+              </p>
             </div>
 
-            <div class="kpi warn">
-              <div class="k-label">Ocupación del patio</div>
-              <div class="k-value">78<small>%</small></div>
-              <div class="k-trend">▲ 3% en últimas 6h</div>
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Buques y atraques</h4>
+                <span class="tag">Sin registros</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Buque</th>
+                    <th>Atraque</th>
+                    <th>STS asignadas</th>
+                    <th>Mov/h</th>
+                    <th>Avance</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 28px; color: var(--muted);">
+                      No hay información de buques disponible.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
+          </template>
 
-          <div class="panel-c">
-            <div class="p-head">
-              <h4>{{ pageTitle }}</h4>
-              <span class="tag">CARGALOCATE</span>
+          <!-- PATIO & YARD -->
+          <template v-else-if="activeSection === 'sec-patio'">
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Inventario del patio</h4>
+                <span class="tag">Pendiente de integración</span>
+              </div>
+              <p style="color: var(--muted); line-height: 1.6;">
+                La ocupación por bloques, las capacidades y el inventario se mostrarán aquí
+                cuando incorporemos esos datos al backend.
+              </p>
             </div>
 
-            <p>
-              La estructura de Vue ya está funcionando. En los próximos pasos
-              vamos a trasladar el contenido de cada sección y conectar los datos
-              con el backend de Spring Boot.
-            </p>
-          </div>
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Programación de recibos y despachos</h4>
+                <span class="tag">Sin registros</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Orden</th>
+                    <th>Operación</th>
+                    <th>Contenedores</th>
+                    <th>Ventana</th>
+                    <th>Patio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 28px; color: var(--muted);">
+                      No hay operaciones programadas disponibles.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- EQUIPOS -->
+          <template v-else-if="activeSection === 'sec-equipos'">
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Parque de equipos</h4>
+                <span class="tag">Pendiente de conexión</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Horas de uso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="4" style="text-align: center; padding: 28px; color: var(--muted);">
+                      Los equipos aparecerán aquí cuando conectemos la API.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- INCIDENCIAS -->
+          <template v-else-if="activeSection === 'sec-incidencias'">
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Historial de incidencias</h4>
+                <span class="tag">Pendiente de conexión</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Severidad</th>
+                    <th>Descripción</th>
+                    <th>Zona</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 28px; color: var(--muted);">
+                      Las incidencias aparecerán aquí cuando conectemos la API.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- TURNOS -->
+          <template v-else-if="activeSection === 'sec-turnos'">
+            <div class="grid-kpis">
+              <div class="kpi flat">
+                <div class="k-label">Personal en turno</div>
+                <div class="k-value">—</div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
+              <div class="kpi flat">
+                <div class="k-label">Personal asignado</div>
+                <div class="k-value">—</div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
+              <div class="kpi flat">
+                <div class="k-label">Turno actual</div>
+                <div class="k-value">—</div>
+                <div class="k-trend">Pendiente de configuración</div>
+              </div>
+              <div class="kpi flat">
+                <div class="k-label">Lugares de trabajo</div>
+                <div class="k-value">—</div>
+                <div class="k-trend">Pendiente de conexión</div>
+              </div>
+            </div>
+
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Personal y asignación de turnos</h4>
+                <span class="tag">Pendiente de conexión</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Turno</th>
+                    <th>Lugar de trabajo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="4" style="text-align: center; padding: 28px; color: var(--muted);">
+                      El personal aparecerá aquí cuando conectemos la API.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <!-- BITÁCORA -->
+          <template v-else-if="activeSection === 'sec-bitacora'">
+            <div class="panel-c">
+              <div class="p-head">
+                <h4>Bitácora de la terminal</h4>
+                <span class="tag">Pendiente de conexión</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Descripción</th>
+                    <th>Usuario</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="4" style="text-align: center; padding: 28px; color: var(--muted);">
+                      Las anotaciones aparecerán aquí cuando conectemos la API.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
         </section>
       </main>
     </div>
