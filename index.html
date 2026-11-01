@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cargolocate · Terminal Portuaria · Jefe de Turno</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ================= AUTH (LOGIN / REGISTER) ================= -->
+  <div id="authWrapper">
+    <div class="auth-side">
+      <div class="brand">
+        <div class="anchor">🏗️</div>
+        <h1>CARGALOCATE <span>TERMINAL PORTUARIO</span></h1>
+      </div>
+      <div>
+        <h2>Control operativo de la <em>terminal de contenedores</em> para el jefe de turno.</h2>
+        <p>Supervisa muelle, patio, grúas, gates y equipos en tiempo real. Plataforma de logística portuaria Cargolocate · Terminal Muelle 2.</p>
+        <div class="auth-stats" style="margin-top:28px;">
+          <div><b>1,148</b><span>Mov. 24h</span></div>
+          <div><b>42</b><span>Mov/hora</span></div>
+          <div><b>9</b><span>Grúas STS</span></div>
+          <div><b>98.2%</b><span>Disponibilidad</span></div>
+        </div>
+      </div>
+      <div class="auth-stats">
+        <div><b>Terminal Cargolocate</b><span>Puerto de Algeciras · Muelle 2</span></div>
+      </div>
+    </div>
+
+    <div class="auth-form">
+      <!-- LOGIN -->
+      <div class="card-auth" id="loginCard">
+        <h3>Acceso del Jefe de Turno</h3>
+        <p class="sub">Inicia sesión para gestionar la operación de la terminal.</p>
+        <div class="field">
+          <label>Usuario o correo</label>
+          <input type="text" id="loginUser" placeholder="ej. lvega@cargolocate.com" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+        <div class="auth-msg" id="loginMsg"></div>
+        <p class="auth-switch">¿Aún no tienes cuenta? <a href="#" onclick="showAuth('registerCard');return false;">Regístrate aquí</a></p>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="card-auth hidden" id="registerCard">
+        <h3>Registro de Personal</h3>
+        <p class="sub">Crea tu cuenta de jefe de turno de la terminal Cargolocate.</p>
+        <div class="field">
+          <label>Nombre completo</label>
+          <input type="text" id="regName" placeholder="ej. Laura Vega">
+        </div>
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input type="email" id="regEmail" placeholder="ej. lvega@cargolocate.com">
+        </div>
+        <div class="field">
+          <label>Usuario</label>
+          <input type="text" id="regUser" placeholder="ej. lvega">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" id="regPass" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label>Confirmar contraseña</label>
+          <input type="password" id="regPass2" placeholder="Repite la contraseña" autocomplete="new-password">
+        </div>
+        <button class="btn-primary" onclick="doRegister()">Crear cuenta</button>
+        <div class="auth-msg" id="regMsg"></div>
+        <p class="auth-switch">¿Ya tienes cuenta? <a href="#" onclick="showAuth('loginCard');return false;">Inicia sesión</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div id="app" class="hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="anchor">🏗️</div>
+        <h1>CARGOLOCATE <span style="display:block;font-size:10px;color:var(--muted);">JEFE DE TURNO · TERMINAL</span></h1>
+      </div>
+      <nav class="nav">
+        <div class="nav-sep">Operación</div>
+        <button class="active" data-sec="sec-general" onclick="goSection(this)"><span class="ico">📊</span><span>Panel General</span></button>
+        <button data-sec="sec-muelle" onclick="goSection(this)"><span class="ico">🚢</span><span>Muelle</span></button>
+        <button data-sec="sec-patio" onclick="goSection(this)"><span class="ico">🗄️</span><span>Patio & Yard</span></button>
+        <div class="nav-sep">Recursos</div>
+        <button data-sec="sec-equipos" onclick="goSection(this)"><span class="ico">🏗️</span><span>Equipos</span></button>
+        <button data-sec="sec-incidencias" onclick="goSection(this)"><span class="ico">🚨</span><span>Incidencias</span></button>
+        <div class="nav-sep">Personal</div>
+        <button data-sec="sec-turnos" onclick="goSection(this)"><span class="ico">👷</span><span>Turnos</span></button>
+        <button data-sec="sec-bitacora" onclick="goSection(this)"><span class="ico">📖</span><span>Bitácora</span></button>
+      </nav>
+      <div class="side-foot">
+        <div class="meta">
+          Terminal Cargolocate · Muelle 2<br>
+          Puerto de Algeciras<br>
+          Turno: 08:00 – 20:00
+        </div>
+        <button class="btn-logout" onclick="doLogout()">🚪 Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h2 id="pageTitle">Panel General</h2>
+          <div class="crumb">Terminal Cargolocate · Ruta Algeciras → Rotterdam · Próximo atraque ETA 4h</div>
+        </div>
+        <div class="topbar-right">
+          <div class="clock">
+            <b id="clockTime">--:--:--</b>
+            <span id="clockDate">--</span>
+          </div>
+          <div class="user-chip">
+            <div class="avatar" id="userAv">--</div>
+            <div>
+              <b id="userName">—</b>
+              <span id="userRole">Jefe de Turno</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PANEL GENERAL ============ -->
+      <section class="section active" id="sec-general">
+        <div class="grid-kpis">
+          <div class="kpi up"><div class="k-label">Movimientos (24h)</div><div class="k-value">1,148<small>mvm</small></div><div class="k-trend">▲ 6.2% vs ayer</div></div>
+          <div class="kpi flat"><div class="k-label">Productividad</div><div class="k-value" id="kpiProd">34.2<small>mov/h</small></div><div class="k-trend">● Promedio muelle + patio</div></div>
+          <div class="kpi warn"><div class="k-label">Grúas STS operativas</div><div class="k-value">7<small>/ 9</small></div><div class="k-trend">▲ 2 en mantenimiento</div></div>
+          <div class="kpi warn"><div class="k-label">Ocupación del patio</div><div class="k-value">78<small>%</small></div><div class="k-trend">▲ 3% en últimas 6h</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel-c">
+            <div class="p-head"><h4>Movimientos por hora · Terminal</h4><span class="tag">Última hora</span></div>
+            <div class="chart-wrap"><canvas id="chartMain"></canvas></div>
+          </div>
+          <div class="panel-c">
+            <div class="p-head"><h4>Operación en vivo</h4><span class="tag">Tiempo real</span></div>
+            <div class="gauge-row">
+              <div class="gauge"><div class="g-label">Grúas STS activas</div><div class="g-val" id="gSts">7</div><div class="bar"><i style="width:78%"></i></div></div>
+              <div class="gauge"><div class="g-label">RTG operativos</div><div class="g-val" id="gRtg">9</div><div class="bar"><i style="width:82%"></i></div></div>
+              <div class="gauge"><div class="g-label">Gates abiertos</div><div class="g-val" id="gGates">3</div><div class="bar"><i style="width:75%"></i></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel-c">
+            <div class="p-head"><h4>Incidencias activas</h4><span class="tag" id="alarmCount">2 activas</span></div>
+            <div class="alerts-list" id="alertList">
+              <div class="alert-item warn"><div class="a-time">14:12</div><div><b>Retraso en Gate 2</b><p>Cola de camiones de 14 min · carriles extra habilitados.</p></div></div>
+              <div class="alert-item crit"><div class="a-time">13:05</div><div><b>Avería eléctrica grúa STS-3</b><p>Muelle 2 detenido · técnicos asignados, estimación 2h.</p></div></div>
+            </div>
+          </div>
+          <div class="panel-c">
+            <div class="p-head"><h4>Reefer · Temperaturas</h4><span class="tag">Monitoreo activo</span></div>
+            <div class="gauge-row">
+              <div class="gauge"><div class="g-label">Reefer enchufados</div><div class="g-val">342<small style="font-size:11px;color:var(--muted);">/420</small></div><div class="bar"><i style="width:81%"></i></div></div>
+              <div class="gauge"><div class="g-label">T° promedio</div><div class="g-val">-18.4<small style="font-size:11px;color:var(--muted);">°C</small></div><div class="bar"><i style="width:52%"></i></div></div>
+              <div class="gauge"><div class="g-label">Alarmas reefer</div><div class="g-val" style="color:var(--warn)">1</div><div class="bar"><i class="warn" style="width:12%"></i></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MUELLE ============ -->
+      <section class="section" id="sec-muelle">
+        <div class="grid-kpis">
+          <div class="kpi flat"><div class="k-label">Buques atracados</div><div class="k-value">3</div><div class="k-trend">● 1 maniobra en curso</div></div>
+          <div class="kpi up"><div class="k-label">Productividad de muelle</div><div class="k-value">34.2<small>mov/h</small></div><div class="k-trend">▲ Objetivo 32</div></div>
+          <div class="kpi flat"><div class="k-label">Tiempo medio de estancia</div><div class="k-value">28<small>h</small></div><div class="k-trend">● 3% bajo mes</div></div>
+          <div class="kpi warn"><div class="k-label">Próximo atraque</div><div class="k-value">4<small>h 20m</small></div><div class="k-trend">▲ M/V Estrella del Atlántico</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel-c">
+            <div class="p-head"><h4>Avance de operaciones por buque</h4><span class="tag">Muelle 2 · 3 atracados</span></div>
+            <div class="gauge-row">
+              <div class="gauge"><div class="g-label">Cargolocate Express</div><div class="g-val" style="color:var(--ok)">64%</div><div class="bar"><i style="width:64%"></i></div></div>
+              <div class="gauge"><div class="g-label">Terminal Pride</div><div class="g-val">82%</div><div class="bar"><i style="width:82%"></i></div></div>
+              <div class="gauge"><div class="g-label">Norte Container</div><div class="g-val">32%</div><div class="bar"><i style="width:32%"></i></div></div>
+            </div>
+          </div>
+          <div class="panel-c">
+            <div class="p-head"><h4>Buques atracados</h4><span class="tag">Estado operacional</span></div>
+            <table>
+              <thead><tr><th>Buque</th><th>Atraque</th><th>STS</th><th>Mov/h</th><th>Avance</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td>Cargolocate Express</td><td>02:15</td><td>4</td><td>38</td><td>64%</td><td><span class="badge ok">OPERACIÓN</span></td></tr>
+                <tr><td>Terminal Pride</td><td>04:40</td><td>2</td><td>29</td><td>82%</td><td><span class="badge ok">OPERACIÓN</span></td></tr>
+                <tr><td>Norte Container</td><td>07:55</td><td>1</td><td>24</td><td>32%</td><td><span class="badge warn">EN ESPERA</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PATIO ============ -->
+      <section class="section" id="sec-patio">
+        <div class="grid-kpis">
+          <div class="kpi warn"><div class="k-label">Ocupación del patio</div><div class="k-value">78<small>%</small></div><div class="k-trend">▲ Umbral 85%</div></div>
+          <div class="kpi flat"><div class="k-label">Reefer enchufados</div><div class="k-value">342<small>/420</small></div><div class="k-trend">● 1 alarma activa</div></div>
+          <div class="kpi up"><div class="k-label">Export listos</div><div class="k-value">1,204<small>cont</small></div><div class="k-trend">▲ 98% disponibles</div></div>
+          <div class="kpi flat"><div class="k-label">Dwell time medio</div><div class="k-value">4.2<small>días</small></div><div class="k-trend">● 0.3 bajo objetivo</div></div>
+        </div>
+
+        <div class="panel-c">
+          <div class="p-head"><h4>Inventario por bloque</h4><span class="tag">Patio Cargolocate</span></div>
+          <div class="tank-row">
+            <div class="tank"><div class="t-head"><b>Bloque A · Import</b><span class="badge ok">OK</span></div><div class="t-pct" style="color:var(--ok)">82%</div><div class="t-cap">Plazas 512 · <b style="color:var(--text)">420 cont</b></div><div class="bar"><i style="width:82%"></i></div></div>
+            <div class="tank"><div class="t-head"><b>Bloque B · Export</b><span class="badge info">ACTIVO</span></div><div class="t-pct" style="color:var(--accent)">64%</div><div class="t-cap">Plazas 640 · <b style="color:var(--text)">410 cont</b></div><div class="bar"><i style="width:64%"></i></div></div>
+            <div class="tank"><div class="t-head"><b>Bloque C · Reefer</b><span class="badge warn">MEDIO</span></div><div class="t-pct" style="color:var(--warn)">81%</div><div class="t-cap">Plugs 420 · <b style="color:var(--text)">342 cont</b></div><div class="bar"><i class="warn" style="width:81%"></i></div></div>
+            <div class="tank"><div class="t-head"><b>Bloque D · Vacíos</b><span class="badge crit">BAJO</span></div><div class="t-pct" style="color:var(--danger)">28%</div><div class="t-cap">Plazas 720 · <b style="color:var(--text)">486 cont</b></div><div class="bar"><i class="crit" style="width:28%"></i></div></div>
+          </div>
+        </div>
+
+        <div class="panel-c">
+          <div class="p-head"><h4>Programación de recibos / despachos</h4><span class="tag">Gates</span></div>
+          <table>
+            <thead><tr><th>Orden</th><th>Operación</th><th>Contenedores</th><th>Ventana</th><th>Patio</th></tr></thead>
+            <tbody>
+              <tr><td>AUT-8821</td><td>Import</td><td>120</td><td>16:00 – 20:00</td><td>Bloque A</td></tr>
+              <tr><td>AUT-8822</td><td>Export</td><td>85</td><td>14:00 – 18:00</td><td>Bloque B</td></tr>
+              <tr><td>AUT-8823</td><td>Reefer</td><td>32</td><td>10:00 – 14:00</td><td>Bloque C</td></tr>
+              <tr><td>AUT-8824</td><td>Vacíos</td><td>200</td><td>Mañana día 14</td><td>Bloque D</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ EQUIPOS ============ -->
+      <section class="section" id="sec-equipos">
+        <div class="grid-kpis">
+          <div class="kpi up"><div class="k-label">Disponibilidad de equipos</div><div class="k-value">94<small>%</small></div><div class="k-trend">▲ Objetivo 92%</div></div>
+          <div class="kpi crit"><div class="k-label">Equipos averiados</div><div class="k-value">2</div><div class="k-trend">▼ STS-3 y RTG-4</div></div>
+          <div class="kpi flat"><div class="k-label">Horas promedio</div><div class="k-value">6,412<small>h</small></div><div class="k-trend">● Parque operado</div></div>
+          <div class="kpi flat"><div class="k-label">En stand-by</div><div class="k-value">3</div><div class="k-trend">● Listos para relevo</div></div>
+        </div>
+
+        <div class="panel-c">
+          <div class="p-head"><h4>Parque de equipos</h4><span class="tag">9 STS · RTG · Reach Stacker</span></div>
+          <table>
+            <thead><tr><th>Equipo</th><th>Tipo</th><th>Estado</th><th>Horas</th><th>Próx. mant.</th></tr></thead>
+            <tbody>
+              <tr><td>STS-1</td><td>Grúa de muelle</td><td><span class="badge ok">OPERATIVA</span></td><td>14,208 h</td><td>620 h</td></tr>
+              <tr><td>STS-2</td><td>Grúa de muelle</td><td><span class="badge ok">OPERATIVA</span></td><td>15,113 h</td><td>410 h</td></tr>
+              <tr><td>STS-3</td><td>Grúa de muelle</td><td><span class="badge crit">AVERIADA</span></td><td>14,982 h</td><td>En línea</td></tr>
+              <tr><td>RTG-1</td><td>Pórtico de patio</td><td><span class="badge ok">OPERATIVO</span></td><td>8,204 h</td><td>980 h</td></tr>
+              <tr><td>RTG-4</td><td>Pórtico de patio</td><td><span class="badge crit">AVERIADO</span></td><td>9,102 h</td><td>En línea</td></tr>
+              <tr><td>RS-1</td><td>Reach Stacker</td><td><span class="badge ok">OPERATIVO</span></td><td>4,311 h</td><td>1,560 h</td></tr>
+              <tr><td>TL-1</td><td>Top Lifter (empty)</td><td><span class="badge warn">OBSERVACIÓN</span></td><td>6,054 h</td><td>240 h</td></tr>
+              <tr><td>SH-1</td><td>Shuttle Carrier</td><td><span class="badge info">STAND-BY</span></td><td>3,887 h</td><td>2,100 h</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ INCIDENCIAS ============ -->
+      <section class="section" id="sec-incidencias">
+        <div class="grid-kpis">
+          <div class="kpi crit"><div class="k-label">Críticas sin atender</div><div class="k-value">1</div><div class="k-trend">▼ Requieren acción</div></div>
+          <div class="kpi warn"><div class="k-label">Avisos</div><div class="k-value">1</div><div class="k-trend">● Monitorear</div></div>
+          <div class="kpi flat"><div class="k-label">Notificadas (24h)</div><div class="k-value">12</div><div class="k-trend">● Registradas</div></div>
+          <div class="kpi up"><div class="k-label">Resueltas</div><div class="k-value">10</div><div class="k-trend">▲ 83% resolución</div></div>
+        </div>
+        <div class="panel-c">
+          <div class="p-head"><h4>Historial de incidencias</h4><span class="tag">Registro operativo del día</span></div>
+          <table>
+            <thead><tr><th>Hora</th><th>Severidad</th><th>Incidencia</th><th>Zona</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>14:12</td><td><span class="badge warn">AVISO</span></td><td>Congestión de camiones en Gate 2</td><td>Gate 2</td><td>En proceso</td></tr>
+              <tr><td>13:05</td><td><span class="badge crit">CRÍTICA</span></td><td>Avería eléctrica grúa STS-3</td><td>Muelle 2</td><td><span class="badge warn">Técnicos en sitio</span></td></tr>
+              <tr><td>11:40</td><td><span class="badge crit">CRÍTICA</span></td><td>RTG-4 detenido por fuga hidráulica</td><td>Bloque B</td><td><span class="badge warn">Taller</span></td></tr>
+              <tr><td>09:20</td><td><span class="badge warn">AVISO</span></td><td>Reefer TRLU-88214 t° 6.8 °C</td><td>Bloque C</td><td>Reubicado</td></tr>
+              <tr><td>06:58</td><td><span class="badge ok">RESUELTA</span></td><td>Debate de contenedor mal estibado en Cargolocate Express</td><td>Muelle 2</td><td>Reubicado</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ TURNOS ============ -->
+      <section class="section" id="sec-turnos">
+        <div class="grid-kpis">
+          <div class="kpi flat"><div class="k-label">Personal en turno</div><div class="k-value" id="perCount">0</div><div class="k-trend">● Turno mañana</div></div>
+          <div class="kpi up"><div class="k-label">Apuntadores asignados</div><div class="k-value" id="tallyCount">0</div><div class="k-trend">▲ Con lugar de trabajo</div></div>
+          <div class="kpi flat"><div class="k-label">Guardia actual</div><div class="k-value">Mañana</div><div class="k-trend">● 08:00 – 20:00</div></div>
+          <div class="kpi warn"><div class="k-label">Camiones despachados</div><div class="k-value">486</div><div class="k-trend">● Pico esperado 16:00</div></div>
+        </div>
+        <div class="panel-c">
+          <div class="p-head"><h4>Asignación de personal · Lugares de apuntadores</h4><span class="tag">Asigna el lugar de trabajo</span></div>
+          <div class="crew-list" id="crewGrid"></div>
+        </div>
+        <div class="panel-c">
+          <div class="p-head"><h4>Agregar personal al turno</h4></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input class="inp" id="pName" style="flex:1;min-width:200px;" placeholder="Nombre completo">
+            <input class="inp" id="pRole" style="flex:1;min-width:160px;" placeholder="Cargo (ej. Apuntador)">
+            <select class="sel" id="pShift">
+              <option>08–14</option>
+              <option>14–22</option>
+              <option>Supervisión</option>
+            </select>
+            <select class="sel" id="pPlace"></select>
+            <button class="btn-primary" style="width:auto;padding:11px 22px;" onclick="addPerson()">Agregar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ BITÁCORA ============ -->
+      <section class="section" id="sec-bitacora">
+        <div class="panel-c">
+          <div class="p-head"><h4>Bitácora de la terminal</h4><span class="tag">Registro de acontecimientos</span></div>
+          <div class="log-view" id="logView"></div>
+        </div>
+        <div class="panel-c">
+          <div class="p-head"><h4>Nueva anotación</h4></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input id="logInput" style="flex:1;min-width:220px;background:var(--bg-2);border:1px solid var(--line);color:var(--text);padding:11px 14px;border-radius:8px;font-size:13px;" placeholder="Escribe el acontecimiento…">
+            <button class="btn-primary" style="width:auto;padding:11px 22px;" onclick="addLog()">Registrar</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script src="app.js"></script>
+</body>
+</html>
