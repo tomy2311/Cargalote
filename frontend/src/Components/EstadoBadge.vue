@@ -8,19 +8,30 @@ const props = defineProps({
   },
 })
 
-const claseEstado = computed(() =>
-  props.estado
+const claseEstado = computed(() => {
+  const estado = (props.estado || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
-    .replace(/\s+/g, '-')
-)
+
+  const equivalencias = {
+    'operativo': 'operativo',
+    'operativa': 'operativo',
+    'mantenimiento': 'mantenimiento',
+    'en mantenimiento': 'mantenimiento',
+    'averiado': 'averiado',
+    'averiada': 'averiado',
+    'disponible': 'disponible',
+  }
+
+  return equivalencias[estado] || 'sin-clasificar'
+})
 </script>
 
 <template>
   <span class="estado-badge" :class="claseEstado">
-    {{ estado }}
+    {{ props.estado || 'Sin estado' }}
   </span>
 </template>
 
@@ -32,34 +43,38 @@ const claseEstado = computed(() =>
   border: 1px solid transparent;
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.4;
   white-space: nowrap;
-  background-color: #e5e7eb;
-  color: #374151;
-  border-color: #d1d5db;
+  background: rgba(154, 167, 196, 0.12);
+  color: var(--muted);
+  border-color: var(--line);
 }
 
 .operativo {
-  background-color: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
+  background: rgba(63, 202, 122, 0.14);
+  color: #93e8bb;
+  border-color: rgba(63, 202, 122, 0.35);
 }
 
-.en-mantenimiento {
-  background-color: #fef9c3;
-  color: #854d0e;
-  border-color: #fde047;
+.mantenimiento {
+  background: rgba(255, 183, 3, 0.14);
+  color: #ffd166;
+  border-color: rgba(255, 183, 3, 0.35);
 }
 
 .averiado {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border-color: #fca5a5;
+  background: rgba(255, 90, 78, 0.14);
+  color: #ff9a8a;
+  border-color: rgba(255, 90, 78, 0.35);
 }
 
 .disponible {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border-color: #93c5fd;
+  background: rgba(47, 129, 247, 0.15);
+  color: #8ab6ff;
+  border-color: rgba(47, 129, 247, 0.35);
+}
+
+.sin-clasificar {
+  background: rgba(154, 167, 196, 0.12);
+  color: var(--muted);
 }
 </style>
