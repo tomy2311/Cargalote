@@ -1,0 +1,17 @@
+# Configuración local
+.env
+.env.*
+
+# Credenciales y claves privadas
+*.key
+*.pem
+*.p12
+*.jks
+serviceAccountKey.json
+
+# IDE
+.vscode/
+.idea/
+
+# Maven
+target/
