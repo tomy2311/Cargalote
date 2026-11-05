@@ -1,5 +1,7 @@
 package com.cargalote.cargalote.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,6 +15,9 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> manejarErrorValidacion(
@@ -39,6 +44,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> manejarJsonInvalido(
             HttpMessageNotReadableException e) {
 
+        logger.warn(
+                "JSON inválido recibido: {}",
+                e.getMostSpecificCause().getMessage()
+        );
+
         Map<String, Object> respuesta = new HashMap<>();
 
         respuesta.put("status", 400);
@@ -52,6 +62,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> manejarErrorGeneral(Exception e) {
+
+        logger.error("Error interno del servidor:", e);
 
         Map<String, Object> respuesta = new HashMap<>();
 
