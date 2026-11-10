@@ -1,7 +1,9 @@
 package com.cargalote.cargalote.exception;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,64 +17,60 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> manejarErrorValidacion(
-            MethodArgumentNotValidException e) {
-
+    public ResponseEntity<Map<String, Object>> manejarErrorValidacion(MethodArgumentNotValidException e) {
         Map<String, String> errores = new HashMap<>();
-
         for (FieldError error : e.getBindingResult().getFieldErrors()) {
             errores.put(error.getField(), error.getDefaultMessage());
         }
-
         Map<String, Object> respuesta = new HashMap<>();
-
         respuesta.put("status", 400);
         respuesta.put("error", "Datos inválidos");
         respuesta.put("errores", errores);
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(respuesta);
+        return ResponseEntity.badRequest().body(respuesta);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> manejarJsonInvalido(
-            HttpMessageNotReadableException e) {
-
-        logger.warn(
-                "JSON inválido recibido: {}",
-                e.getMostSpecificCause().getMessage()
-        );
-
+    public ResponseEntity<Map<String, Object>> manejarJsonInvalido(HttpMessageNotReadableException e) {
+        logger.warn("JSON inválido recibido: {}", e.getMostSpecificCause().getMessage());
         Map<String, Object> respuesta = new HashMap<>();
-
         respuesta.put("status", 400);
         respuesta.put("error", "JSON inválido");
         respuesta.put("mensaje", "El formato de los datos enviados no es válido.");
+        return ResponseEntity.badRequest().body(respuesta);
+    }
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(respuesta);
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> manejarNoEncontrado(EntityNotFoundException e) {
+        return respuesta(HttpStatus.NOT_FOUND, "Recurso no encontrado", e.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> manejarArgumentoInvalido(IllegalArgumentException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Solicitud inválida", e.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> manejarIntegridad(DataIntegrityViolationException e) {
+        logger.warn("Conflicto de integridad al guardar datos", e);
+        return respuesta(HttpStatus.CONFLICT, "Conflicto de datos",
+                "No se puede completar la operación porque el registro está relacionado con otros datos o viola una restricción.");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> manejarErrorGeneral(Exception e) {
-
         logger.error("Error interno del servidor:", e);
+        return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor",
+                "Ocurrió un error al procesar la solicitud.");
+    }
 
-        Map<String, Object> respuesta = new HashMap<>();
-
-        respuesta.put("status", 500);
-        respuesta.put("error", "Error interno del servidor");
-        respuesta.put("mensaje", "Ocurrió un error al procesar la solicitud.");
-
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(respuesta);
+    private ResponseEntity<Map<String, Object>> respuesta(HttpStatus status, String error, String mensaje) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", status.value());
+        body.put("error", error);
+        body.put("mensaje", mensaje);
+        return ResponseEntity.status(status).body(body);
     }
 }
