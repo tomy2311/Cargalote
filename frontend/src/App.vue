@@ -1,6 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-
+import {
+  listarEquipos,
+  registrarEquipo,
+  actualizarEquipo,
+  eliminarEquipo
+} from '@/services/equiposService'
 // Estado de acceso local de demostración.
 // Más adelante se reemplazará por Firebase Authentication.
 const authMode = ref('login')
@@ -22,6 +27,21 @@ const regMsg = ref({ text: '', type: '' })
 const activeSection = ref('sec-general')
 const currentTime = ref('')
 const currentDate = ref('')
+
+const equipos = ref([])
+const equiposLoading = ref(false)
+const equiposError = ref('')
+const equipoFormularioVisible = ref(false)
+const equipoGuardando = ref(false)
+const equipoEliminandoId = ref(null)
+const equipoEditandoId = ref(null)
+const equipoMensaje = ref({ text: '', type: '' })
+const nuevoEquipo = ref({
+  nombre: '',
+  tipo: '',
+  estado: '',
+  horasUso: 0
+})
 
 const sections = [
   { id: 'sec-general', title: 'Panel General', icon: '📊' },
@@ -162,11 +182,166 @@ function doLogout() {
   loginPass.value = ''
   showAuth('login')
 }
+async function cargarEquipos() {
+  equiposLoading.value = true
+  equiposError.value = ''
+
+  try {
+    const resultado = await listarEquipos()
+    equipos.value = Array.isArray(resultado) ? resultado : []
+  } catch (error) {
+    console.error('Error al cargar equipos:', error)
+    equiposError.value = error.message || 'No se pudieron cargar los equipos.'
+  } finally {
+    equiposLoading.value = false
+  }
+}
+
+function limpiarFormularioEquipo() {
+  nuevoEquipo.value = {
+    nombre: '',
+    tipo: '',
+    estado: '',
+    horasUso: 0
+  }
+  equipoEditandoId.value = null
+}
+
+function abrirFormularioNuevoEquipo() {
+  limpiarFormularioEquipo()
+  equipoMensaje.value = { text: '', type: '' }
+  equipoFormularioVisible.value = true
+}
+
+function abrirFormularioEdicion(equipo) {
+  equipoMensaje.value = { text: '', type: '' }
+  equipoEditandoId.value = equipo.id
+  nuevoEquipo.value = {
+    nombre: equipo.nombre ?? '',
+    tipo: equipo.tipo ?? '',
+    estado: equipo.estado ?? '',
+    horasUso: equipo.horasUso ?? 0
+  }
+  equipoFormularioVisible.value = true
+}
+
+function cancelarFormularioEquipo() {
+  equipoFormularioVisible.value = false
+  limpiarFormularioEquipo()
+  equipoMensaje.value = { text: '', type: '' }
+}
+
+async function guardarEquipo() {
+  const nombre = nuevoEquipo.value.nombre.trim()
+  const tipo = nuevoEquipo.value.tipo.trim()
+  const estado = nuevoEquipo.value.estado.trim()
+  const horasUso = nuevoEquipo.value.horasUso
+
+  if (!nombre || !tipo || !estado) {
+    equipoMensaje.value = {
+      text: 'Completa todos los campos obligatorios.',
+      type: 'error'
+    }
+    return
+  }
+
+  if (
+    horasUso === '' ||
+    horasUso === null ||
+    horasUso === undefined ||
+    !Number.isInteger(Number(horasUso)) ||
+    Number(horasUso) < 0
+  ) {
+    equipoMensaje.value = {
+      text: 'Las horas de uso deben ser un número entero mayor o igual a cero.',
+      type: 'error'
+    }
+    return
+  }
+
+  const datos = {
+    nombre,
+    tipo,
+    estado,
+    horasUso: Number(horasUso)
+  }
+
+  equipoGuardando.value = true
+  equipoMensaje.value = { text: '', type: '' }
+
+  try {
+    if (equipoEditandoId.value !== null) {
+      await actualizarEquipo(equipoEditandoId.value, datos)
+      equipoMensaje.value = {
+        text: 'Equipo actualizado correctamente.',
+        type: 'ok'
+      }
+    } else {
+      await registrarEquipo(datos)
+      equipoMensaje.value = {
+        text: 'Equipo registrado correctamente.',
+        type: 'ok'
+      }
+    }
+
+    equipoFormularioVisible.value = false
+    limpiarFormularioEquipo()
+    await cargarEquipos()
+  } catch (error) {
+    console.error('Error al guardar el equipo:', error)
+    equipoMensaje.value = {
+      text: error.message || 'No se pudo guardar el equipo.',
+      type: 'error'
+    }
+  } finally {
+    equipoGuardando.value = false
+  }
+}
+
+async function confirmarEliminarEquipo(equipo) {
+  const confirmado = window.confirm(
+    `¿Estás seguro de que deseas eliminar el equipo ${equipo.nombre}?`
+  )
+
+  if (!confirmado) return
+
+  equipoEliminandoId.value = equipo.id
+  equipoMensaje.value = { text: '', type: '' }
+
+  try {
+    await eliminarEquipo(equipo.id)
+    equipoMensaje.value = {
+      text: 'Equipo eliminado correctamente.',
+      type: 'ok'
+    }
+    await cargarEquipos()
+  } catch (error) {
+    console.error('Error al eliminar el equipo:', error)
+    equipoMensaje.value = {
+      text: error.message || 'No se pudo eliminar el equipo.',
+      type: 'error'
+    }
+  } finally {
+    equipoEliminandoId.value = null
+  }
+}
+
+function claseEstadoEquipo(estado = '') {
+  const valor = estado.toLowerCase()
+
+  if (valor.includes('operat')) return 'ok'
+  if (valor.includes('manten')) return 'warn'
+  if (valor.includes('fuera') || valor.includes('inactiv')) return 'crit'
+  return 'info'
+}
 
 function goSection(sectionId) {
   activeSection.value = sectionId
-}
 
+  if (sectionId === 'sec-equipos') {
+    cargarEquipos()
+  }
+}
 function initials(name = '') {
   return name
     .split(' ')
@@ -582,27 +757,184 @@ onUnmounted(() => {
           <!-- EQUIPOS -->
           <template v-else-if="activeSection === 'sec-equipos'">
             <div class="panel-c">
-              <div class="p-head">
-                <h4>Parque de equipos</h4>
-                <span class="tag">Pendiente de conexión</span>
+              <div class="p-head equipos-heading">
+                <div>
+                  <h4>Parque de equipos</h4>
+                  <span class="tag">
+                    {{ equipos.length }} {{ equipos.length === 1 ? 'equipo' : 'equipos' }}
+                  </span>
+                </div>
+                <div class="equipos-toolbar-actions">
+                  <button
+                    class="btn-action btn-secondary"
+                    type="button"
+                    :disabled="equiposLoading"
+                    @click="cargarEquipos"
+                  >
+                    ↻ Actualizar
+                  </button>
+                  <button
+                    class="btn-action btn-primary-action"
+                    type="button"
+                    @click="abrirFormularioNuevoEquipo"
+                  >
+                    + Nuevo equipo
+                  </button>
+                </div>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Horas de uso</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colspan="4" style="text-align: center; padding: 28px; color: var(--muted);">
-                      Los equipos aparecerán aquí cuando conectemos la API.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+
+              <div
+                v-if="equipoMensaje.text"
+                class="equipos-message"
+                :class="equipoMensaje.type"
+                role="status"
+              >
+                {{ equipoMensaje.text }}
+              </div>
+
+              <form
+                v-if="equipoFormularioVisible"
+                class="equipo-form"
+                @submit.prevent="guardarEquipo"
+              >
+                <div class="equipo-form-heading">
+                  <h4>{{ equipoEditandoId !== null ? 'Editar equipo' : 'Registrar equipo' }}</h4>
+                  <span class="tag">{{ equipoEditandoId !== null ? `ID ${equipoEditandoId}` : 'Nuevo registro' }}</span>
+                </div>
+
+                <div class="equipo-form-grid">
+                  <div class="field">
+                    <label for="equipo-nombre">Nombre *</label>
+                    <input
+                      id="equipo-nombre"
+                      v-model.trim="nuevoEquipo.nombre"
+                      class="inp"
+                      type="text"
+                      maxlength="120"
+                      placeholder="Ej. STS-01"
+                      required
+                    >
+                  </div>
+
+                  <div class="field">
+                    <label for="equipo-tipo">Tipo *</label>
+                    <input
+                      id="equipo-tipo"
+                      v-model.trim="nuevoEquipo.tipo"
+                      class="inp"
+                      type="text"
+                      maxlength="120"
+                      placeholder="Ej. Grúa de muelle"
+                      required
+                    >
+                  </div>
+
+                  <div class="field">
+                    <label for="equipo-estado">Estado *</label>
+                    <input
+                      id="equipo-estado"
+                      v-model.trim="nuevoEquipo.estado"
+                      class="inp"
+                      type="text"
+                      maxlength="80"
+                      placeholder="Ej. Operativo"
+                      required
+                    >
+                  </div>
+
+                  <div class="field">
+                    <label for="equipo-horas">Horas de uso *</label>
+                    <input
+                      id="equipo-horas"
+                      v-model.number="nuevoEquipo.horasUso"
+                      class="inp"
+                      type="number"
+                      min="0"
+                      step="1"
+                      required
+                    >
+                  </div>
+                </div>
+
+                <div class="equipo-form-actions">
+                  <button
+                    class="btn-action btn-secondary"
+                    type="button"
+                    :disabled="equipoGuardando"
+                    @click="cancelarFormularioEquipo"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    class="btn-action btn-primary-action"
+                    type="submit"
+                    :disabled="equipoGuardando"
+                  >
+                    {{ equipoGuardando ? 'Guardando...' : (equipoEditandoId !== null ? 'Guardar cambios' : 'Registrar equipo') }}
+                  </button>
+                </div>
+              </form>
+
+              <div v-if="equiposLoading" class="equipos-empty-state">
+                Cargando equipos...
+              </div>
+
+              <div v-else-if="equiposError" class="equipos-message error" role="alert">
+                {{ equiposError }}
+                <button class="btn-action btn-secondary" type="button" @click="cargarEquipos">
+                  Reintentar
+                </button>
+              </div>
+
+              <div v-else-if="equipos.length === 0" class="equipos-empty-state">
+                <strong>No hay equipos registrados.</strong>
+                <span>Registrá el primer equipo para comenzar a administrar el parque.</span>
+              </div>
+
+              <div v-else class="equipos-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th>Horas de uso</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="equipo in equipos" :key="equipo.id">
+                      <td>{{ equipo.nombre }}</td>
+                      <td>{{ equipo.tipo }}</td>
+                      <td>
+                        <span class="badge" :class="claseEstadoEquipo(equipo.estado)">
+                          {{ equipo.estado }}
+                        </span>
+                      </td>
+                      <td>{{ equipo.horasUso ?? '—' }}</td>
+                      <td>
+                        <div class="equipos-row-actions">
+                          <button
+                            class="btn-action btn-secondary btn-compact"
+                            type="button"
+                            @click="abrirFormularioEdicion(equipo)"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            class="btn-action btn-danger btn-compact"
+                            type="button"
+                            :disabled="equipoEliminandoId === equipo.id"
+                            @click="confirmarEliminarEquipo(equipo)"
+                          >
+                            {{ equipoEliminandoId === equipo.id ? 'Eliminando...' : 'Eliminar' }}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </template>
 
