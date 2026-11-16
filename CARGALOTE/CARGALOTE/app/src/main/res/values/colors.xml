@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fondo">#0B0F1A</color>
+    <color name="tarjeta">#141828</color>
+    <color name="borde">#242B45</color>
+    <color name="texto">#FFFFFF</color>
+    <color name="texto_secundario">#9AA4BF</color>
+    <color name="acento">#F58220</color>
+    <color name="azul">#3B82F6</color>
+    <color name="estado_pendiente">#F59E0B</color>
+    <color name="estado_curso">#3B82F6</color>
+    <color name="estado_completada">#22C55E</color>
+</resources>
