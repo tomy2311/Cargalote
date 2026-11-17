@@ -12,7 +12,6 @@ import java.util.List;
 
 public class AsignacionAdapter extends RecyclerView.Adapter<AsignacionAdapter.VH> {
 
-    // Interfaz para avisar qué fila se tocó
     public interface OnItemClick {
         void onClick(Operacion operacion);
     }
@@ -35,19 +34,19 @@ public class AsignacionAdapter extends RecyclerView.Adapter<AsignacionAdapter.VH
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        Operacion a = items.get(position);
+        Operacion o = items.get(position);
 
         // Información resumida
-        h.tvDia.setText(a.fecha);
-        h.tvSector.setText(a.nombreCarga);
-        h.tvDetalle.setText(a.idContenedor + " · " + a.ubicacion);
+        h.tvFecha.setText(o.fecha);
+        h.tvCarga.setText(o.nombreCarga);
+        h.tvDetalle.setText(o.idContenedor + " · " + o.ubicacion);
 
-        // Estado: etiqueta de color + barra lateral
-        EstadoUtil.aplicarBadge(h.tvEstado, a.estado);
-        h.vEstado.setBackgroundColor(EstadoUtil.color(h.itemView.getContext(), a.estado));
+        // Estado: etiqueta + barra lateral
+        EstadoUtil.aplicarBadge(h.tvEstado, o.estado);
+        h.vEstado.setBackgroundColor(EstadoUtil.color(h.itemView.getContext(), o.estado));
 
-        // Seleccionar la operación
-        h.itemView.setOnClickListener(v -> listener.onClick(a));
+        // Selección
+        h.itemView.setOnClickListener(v -> listener.onClick(o));
     }
 
     @Override
@@ -56,13 +55,13 @@ public class AsignacionAdapter extends RecyclerView.Adapter<AsignacionAdapter.VH
     }
 
     public static class VH extends RecyclerView.ViewHolder {
-        final TextView tvDia, tvSector, tvDetalle, tvEstado;
+        final TextView tvFecha, tvCarga, tvDetalle, tvEstado;
         final View vEstado;
 
         VH(View v) {
             super(v);
-            tvDia = v.findViewById(R.id.tvDia);
-            tvSector = v.findViewById(R.id.tvSector);
+            tvFecha = v.findViewById(R.id.tvDia);
+            tvCarga = v.findViewById(R.id.tvSector);
             tvDetalle = v.findViewById(R.id.tvDetalle);
             tvEstado = v.findViewById(R.id.tvEstado);
             vEstado = v.findViewById(R.id.vEstado);

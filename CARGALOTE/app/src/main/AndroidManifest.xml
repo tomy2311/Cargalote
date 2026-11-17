@@ -27,6 +27,9 @@
         <activity
             android:name=".DetalleActivity"
             android:exported="false" />
+        <activity
+            android:name=".PerfilActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
