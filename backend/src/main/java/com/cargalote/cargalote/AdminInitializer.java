@@ -15,21 +15,24 @@ public class AdminInitializer {
     CommandLineRunner crearAdministrador(UsuarioRepository repository) {
         return args -> {
 
-            if (!repository.existsByUsername("admin")) {
+            if (!repository.existsByUsername("supervisor")) {
 
                 BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-                Usuario admin = new Usuario(
-                        "Administrador",
-                        "admin@cargalote.com",
-                        "admin",
-                        encoder.encode("123456"),
+                Usuario supervisor = new Usuario(
+                        "Supervisor",
+                        "supervisor@cargalote.com",
+                        "supervisor",
+                        encoder.encode("thomas"),
                         "Administrador"
                 );
 
-                repository.save(admin);
+                repository.save(supervisor);
 
                 System.out.println("Administrador creado correctamente.");
+
+            } else {
+                System.out.println("El administrador ya existe.");
             }
         };
     }
