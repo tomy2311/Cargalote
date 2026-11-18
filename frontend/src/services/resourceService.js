@@ -1,10 +1,13 @@
+
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 async function request(url, options = {}) {
   let response
 
   try {
-    response = await fetch(url, options)
+    response = await fetch(`${API_URL}${url}`, options)
   } catch {
-    throw new Error('No se pudo conectar con el backend. Comprobá que Spring Boot esté iniciado.')
+    throw new Error('No se pudo conectar con el backend. Comprobá que Spring Boot esté disponible.')
   }
 
   if (response.status === 204) return null
@@ -25,8 +28,10 @@ async function request(url, options = {}) {
       const validationErrors = data.errores && typeof data.errores === 'object'
         ? Object.entries(data.errores).map(([field, message]) => `${field}: ${message}`).join(', ')
         : ''
+
       throw new Error(validationErrors || data.mensaje || data.message || data.error || `Error HTTP ${response.status}`)
     }
+
     throw new Error(typeof data === 'string' && data.trim() ? data : `Error HTTP ${response.status}`)
   }
 
@@ -35,20 +40,26 @@ async function request(url, options = {}) {
 
 export function createResourceService(endpoint) {
   const base = endpoint.replace(/\/$/, '')
+
   return {
     list: () => request(base),
     get: (id) => request(`${base}/${id}`),
+
     create: (payload) => request(base, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+
     update: (id, payload) => request(`${base}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
-    remove: (id) => request(`${base}/${id}`, { method: 'DELETE' }),
+
+    remove: (id) => request(`${base}/${id}`, {
+      method: 'DELETE',
+    }),
   }
 }
 
